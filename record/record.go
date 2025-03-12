@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/go-vgo/robotgo"
+	// "github.com/go-vgo/robotgo"
 	hook "github.com/robotn/gohook"
 )
 
@@ -28,8 +28,9 @@ func DoRecord() {
 			steps = append(steps, lastOperation)
 		}
 	}
-
-	robotgo.EventHook(hook.MouseDrag, []string{}, func(event hook.Event) {
+	/***************** 注册事件监听器 *****************/
+	// 监听鼠标拖拽事件（按住移动）
+	hook.Register(hook.MouseDrag, []string{}, func(event hook.Event) {
 		handleMove()
 		var operation model.Operation
 		operation.X = int(float64(event.X) / utils.Dpi)
@@ -39,8 +40,8 @@ func DoRecord() {
 		lastTime = time.Now()
 		lastOperation = operation
 	})
-
-	robotgo.EventHook(hook.MouseMove, []string{}, func(event hook.Event) {
+	// 监听鼠标移动事件（无按键移动）
+	hook.Register(hook.MouseMove, []string{}, func(event hook.Event) {
 		handleDrag()
 		var operation model.Operation
 		operation.X = int(float64(event.X) / utils.Dpi)
@@ -53,8 +54,8 @@ func DoRecord() {
 			steps = append(steps, operation)
 		}
 	})
-
-	robotgo.EventHook(hook.MouseDown, []string{}, func(event hook.Event) {
+	// 监听鼠标按下事件（左/右键点击）
+	hook.Register(hook.MouseDown, []string{}, func(event hook.Event) {
 		handleDrag()
 		handleMove()
 		var operation model.Operation
@@ -71,28 +72,28 @@ func DoRecord() {
 		steps = append(steps, operation)
 		lastOperation = operation
 	})
-	robotgo.EventHook(hook.KeyHold, []string{"f10"}, func(event hook.Event) {
-		robotgo.EventEnd()
+	// 监听F10按键（结束录制）
+	hook.Register(hook.KeyHold, []string{"f10"}, func(event hook.Event) {
+		hook.End() // 终止事件监听
 	})
+	// // 监听Ctrl组合键
+	// hook.Register(hook.KeyHold, []string{"ctrl"}, func(event hook.Event) {
+	// 	if event.Rawcode == 162 {
+	// 		return
+	// 	}
+	// 	handleDrag()
+	// 	handleMove()
+	// 	var operation model.Operation
+	// 	operation.Type = "keyboardDownWithCtrl"
+	// 	operation.Key = string(event.Rawcode)
+	// 	operation.WaitTime = time.Now().Sub(lastTime)
+	// 	lastTime = time.Now()
+	// 	steps = append(steps, operation)
+	// 	lastOperation = operation
+	// })
 
-	robotgo.EventHook(hook.KeyHold, []string{"ctrl"}, func(event hook.Event) {
-		if event.Rawcode == 162 {
-			return
-		}
-		handleDrag()
-		handleMove()
-		var operation model.Operation
-		operation.Type = "keyboardDownWithCtrl"
-		operation.Key = string(event.Rawcode)
-		operation.WaitTime = time.Now().Sub(lastTime)
-		lastTime = time.Now()
-		steps = append(steps, operation)
-		lastOperation = operation
-	})
-	robotgo.EventHook(hook.KeyHold, []string{"alt"}, func(event hook.Event) {
-		if event.Rawcode == 164 {
-			return
-		}
+	// 监听Alt组合键
+	hook.Register(hook.KeyHold, []string{"alt"}, func(event hook.Event) {
 		handleDrag()
 		handleMove()
 		var operation model.Operation
@@ -103,25 +104,39 @@ func DoRecord() {
 		steps = append(steps, operation)
 		lastOperation = operation
 	})
-
-	robotgo.EventHook(hook.KeyDown, []string{}, func(event hook.Event) {
-		if lastOperation.Type == "keyboardDownWithCtrl" || lastOperation.Type == "keyboardDownWithAlt" {
-			return
-		}
+	hook.Register(hook.KeyHold, []string{"shift"}, func(event hook.Event) {
 		handleDrag()
 		handleMove()
 		var operation model.Operation
-		operation.Type = "keyboardDown"
-		operation.Key = string(event.Keychar)
+		operation.Type = "KeyboardDownWithShift"
+		operation.Key = string(event.Rawcode)
 		operation.WaitTime = time.Now().Sub(lastTime)
 		lastTime = time.Now()
 		steps = append(steps, operation)
 		lastOperation = operation
 	})
+	// 监听普通键盘按下
+	// hook.Register(hook.KeyDown, []string{}, func(event hook.Event) {
+	// 	if lastOperation.Type == "keyboardDownWithCtrl" || lastOperation.Type == "keyboardDownWithAlt" {
+	// 		return
+	// 	}
+	// 	handleDrag()
+	// 	handleMove()
+	// 	var operation model.Operation
+	// 	// operation.Type = "keyboardDown"
+	// 	operation.Type = "InputStr"
+	// 	operation.Key = string(event.Keychar)
+	// 	operation.WaitTime = time.Now().Sub(lastTime)
+	// 	lastTime = time.Now()
+	// 	steps = append(steps, operation)
+	// 	lastOperation = operation
+	// })
 
-	s := robotgo.EventStart()
-	<-robotgo.EventProcess(s)
-	ok := robotgo.AddEvents("f10")
+	/***************** 启动事件监听 *****************/
+	s := hook.Start() // 开始捕获系统事件
+	<-hook.Process(s) // 阻塞等待事件处理完成（直到调用hook.End()）
+
+	ok := hook.AddEvents("f10")
 	if ok && len(steps) > 0 {
 		marshal, _ := json.Marshal(steps)
 		ioutil.WriteFile("./script.txt", marshal, 0666)

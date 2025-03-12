@@ -2,6 +2,7 @@ package utils
 
 import (
 	"GSAutoHSProject/model"
+
 	"github.com/go-vgo/robotgo"
 )
 
@@ -38,8 +39,15 @@ func KeyboardDownWithCtrl(step model.Operation) {
 }
 
 func KeyboardDownWithAlt(step model.Operation) {
-	robotgo.KeySleep = 100
-	robotgo.KeyTap(step.Key, "alt")
+	// robotgo.KeySleep = 100
+	// robotgo.KeyTap(step.Key, "alt")
+	robotgo.TypeStr(step.InputStr)
+}
+
+func KeyboardDownWithShift(step model.Operation) {
+	// robotgo.KeySleep = 100
+	// robotgo.KeyTap(step.Key, "alt")
+	robotgo.TypeStr(step.InputStr)
 }
 
 func InputStr(msg string) {

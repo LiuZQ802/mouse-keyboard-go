@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/go-vgo/robotgo"
+	// "github.com/go-vgo/robotgo"
 	hook "github.com/robotn/gohook"
 )
 
@@ -16,12 +16,12 @@ func DoReplay() {
 	fmt.Println("正在执行中...(您可以按 Esc 退出)")
 	stopFlag := false
 	go func() {
-		robotgo.EventHook(hook.KeyHold, []string{"esc"}, func(event hook.Event) {
-			robotgo.EventEnd()
+		hook.Register(hook.KeyHold, []string{"esc"}, func(event hook.Event) {
+			hook.End()
 			stopFlag = true
 		})
-		s := robotgo.EventStart()
-		<-robotgo.EventProcess(s)
+		s := hook.Start()
+		<-hook.Process(s)
 	}()
 	bytes, _ := ioutil.ReadFile("./script.txt")
 	var steps []model.Operation
@@ -53,6 +53,7 @@ func DoReplay() {
 			utils.KeyboardDownWithAlt(step)
 		case "inputStr":
 			utils.InputStr(step.InputStr)
+			fmt.Println(step.InputStr)
 		}
 
 	}
